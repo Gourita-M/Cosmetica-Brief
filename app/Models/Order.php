@@ -14,4 +14,9 @@ class Order extends Model
         'users_id',
         'status',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'users_id');
+    }
 }
