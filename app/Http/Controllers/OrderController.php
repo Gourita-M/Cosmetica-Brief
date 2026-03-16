@@ -13,7 +13,9 @@ class OrderController extends Controller
      */
     public function index()
     {
-        //
+        // Customer should only see their own orders
+        $orders = auth()->user()->orders ?? Order::where('users_id', auth()->id())->get();
+        return response()->json($orders);
     }
 
     /**
@@ -29,7 +31,11 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        //
+        // Customer should only see their own order
+        if ($order->users_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+        return response()->json($order);
     }
 
     /**
