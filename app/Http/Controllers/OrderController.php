@@ -45,7 +45,7 @@ class OrderController extends Controller
     {
         // Validate request
         $request->validate([
-            'status' => 'required|in:pending,prepared,delivered'
+            'status' => 'required|in:pending,prepared,delivered,cancelled'
         ]);
 
         // Employee logic (we'll check authorization via middleware or policy, assuming employee has role 'employee' or similar)
@@ -56,6 +56,24 @@ class OrderController extends Controller
         $order->update(['status' => $request->status]);
 
         return response()->json($order);
+    }
+
+    /**
+     * Cancel an order if it is still pending.
+     */
+    public function cancel(Order $order)
+    {
+        if ($order->users_id !== auth()->id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        if ($order->status !== 'pending') {
+            return response()->json(['message' => 'Order cannot be canceled because it is already being prepared or delivered.'], 400);
+        }
+
+        $order->update(['status' => 'cancelled']);
+
+        return response()->json(['message' => 'Order successfully canceled', 'order' => $order]);
     }
 
     /**
