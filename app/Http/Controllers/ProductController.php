@@ -13,7 +13,8 @@ class ProductController extends Controller
      */
     public function index()
     {
-        //
+        $products = Product::with('category')->get();
+        return response()->json($products);
     }
 
     /**
@@ -27,9 +28,10 @@ class ProductController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Product $product)
+    public function show($slug)
     {
-        //
+        $product = Product::with('category')->where('slug', $slug)->firstOrFail();
+        return response()->json($product);
     }
 
     /**
