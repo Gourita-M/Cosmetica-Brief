@@ -16,4 +16,14 @@ class OrderItem extends Model
         'quantity',
         'unit_price',
     ];
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class, 'orders_id');
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'products_id');
+    }
 }

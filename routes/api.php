@@ -4,19 +4,29 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\StatisticsController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', function (Request $request) {
+        return $request->user();
+    });
 
-Route::POST('/register', [AuthController::class, 'register']);
+    Route::get('/profile', function(Request $request) {
+        return auth()->user();
+    });
 
-Route::middleware('auth:api')->get('/profile', function(Request $request) {
-    return auth()->user();
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
+
+    // Admin / Employee specific routes
+    Route::put('/orders/{order}/status', [OrderController::class, 'update']);
+    Route::get('/statistics', [StatisticsController::class, 'index']);
 });
 
-Route::GET('/login', [AuthController::class, 'login']);
+Route::POST('/register', [AuthController::class, 'register']);
+Route::POST('/login', [AuthController::class, 'login']);
 
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/categories/{category}', [CategoryController::class, 'show']);

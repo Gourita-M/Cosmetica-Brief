@@ -43,7 +43,19 @@ class OrderController extends Controller
      */
     public function update(UpdateOrderRequest $request, Order $order)
     {
-        //
+        // Validate request
+        $request->validate([
+            'status' => 'required|in:pending,prepared,delivered'
+        ]);
+
+        // Employee logic (we'll check authorization via middleware or policy, assuming employee has role 'employee' or similar)
+        if (!in_array(auth()->user()->role, ['admin', 'employee'])) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $order->update(['status' => $request->status]);
+
+        return response()->json($order);
     }
 
     /**
