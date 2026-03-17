@@ -43,12 +43,11 @@ class OrderController extends Controller
      */
     public function update(UpdateOrderRequest $request, Order $order)
     {
-        // Validate request
+
         $request->validate([
             'status' => 'required|in:pending,prepared,delivered,cancelled'
         ]);
 
-        // Employee logic (we'll check authorization via middleware or policy, assuming employee has role 'employee' or similar)
         if (!in_array(auth()->user()->role, ['admin', 'employee'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
@@ -58,12 +57,9 @@ class OrderController extends Controller
         return response()->json($order);
     }
 
-    /**
-     * Cancel an order if it is still pending.
-     */
     public function cancel(Order $order)
     {
-        if ($order->users_id !== auth()->id()) {
+        if ($order->users_id !== auth()->user()->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
