@@ -8,40 +8,32 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\StatisticsController;
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    });
-
-    Route::get('/profile', function(Request $request) {
+Route::get('/profile', function(Request $request) {
         return auth()->user();
-    });
+    })->middleware('auth::api');
 
-    Route::get('/orders', [OrderController::class, 'index']);
-    Route::post('/orders', [OrderController::class, 'store']);
-    Route::get('/orders/{order}', [OrderController::class, 'show']);
-    Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel']);
+Route::get('/orders', [OrderController::class, 'index'])->middleware('auth:api');
+Route::post('/orders', [OrderController::class, 'store'])->middleware('auth:api');
+Route::get('/orders/{order}', [OrderController::class, 'show'])->middleware('auth:api');
+Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->middleware('auth:api');
 
-    // Admin / Employee specific routes
-    Route::put('/orders/{order}/status', [OrderController::class, 'update']);
-    Route::get('/statistics', [StatisticsController::class, 'index']);
-});
+Route::put('/orders/{order}/status', [OrderController::class, 'update'])->middleware('auth:api');
+Route::get('/statistics', [StatisticsController::class, 'index'])->middleware('auth:api');
 
 Route::POST('/register', [AuthController::class, 'register']);
 Route::POST('/login', [AuthController::class, 'login']);
 
-Route::get('/categories', [CategoryController::class, 'index']);
-Route::get('/categories/{category}', [CategoryController::class, 'show']);
+Route::get('/categories', [CategoryController::class, 'index'])->middleware('auth:api');
+Route::get('/categories/{category}', [CategoryController::class, 'show'])->middleware('auth:api');
 
-Route::get('/products', [ProductController::class, 'index']);
-Route::get('/products/{slug}', [ProductController::class, 'show']);
+Route::get('/products', [ProductController::class, 'index'])->middleware('auth:api');
+Route::get('/products/{slug}', [ProductController::class, 'show'])->middleware('auth:api');
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/categories', [CategoryController::class, 'store']);
-    Route::put('/categories/{category}', [CategoryController::class, 'update']);
-    Route::delete('/categories/{category}', [CategoryController::class, 'destroy']);
+Route::post('/categories', [CategoryController::class, 'store'])->middleware('auth:api');
+Route::put('/categories/{category}', [CategoryController::class, 'update'])->middleware('auth:api');
+Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->middleware('auth:api');
 
-    Route::post('/products', [ProductController::class, 'store']);
-    Route::put('/products/{product}', [ProductController::class, 'update']);
-    Route::delete('/products/{product}', [ProductController::class, 'destroy']);
-});
+Route::post('/products', [ProductController::class, 'store'])->middleware('auth:api');
+Route::put('/products/{product}', [ProductController::class, 'update'])->middleware('auth:api');
+Route::delete('/products/{product}', [ProductController::class, 'destroy'])->middleware('auth:api');
+
