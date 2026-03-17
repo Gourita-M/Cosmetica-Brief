@@ -23,7 +23,52 @@ class OrderController extends Controller
      */
     public function store(StoreOrderRequest $request)
     {
-        //
+        $validated = $request->validated();
+
+        // Calculate total amount and verify products
+        $totalAmount = 0;
+        $orderItems = [];
+
+        foreach ($validated['products'] as $item) {
+            $product = \App\Models\Product::where('slug', $item['slug'])->first();
+            
+            if (!$product) {
+                return response()->json(['message' => 'Product ' . $item['slug'] . ' not found'], 404);
+            }
+
+            if ($product->stock < $item['quantity']) {
+                return response()->json(['message' => 'Not enough stock for ' . $product->name], 400);
+            }
+
+            $orderItems[] = [
+                'products_id' => $product->id,
+                'quantity' => $item['quantity'],
+                'unit_price' => $product->price,
+            ];
+            
+            $totalAmount += $product->price * $item['quantity'];
+        }
+
+        // Create the order
+        $order = Order::create([
+            'users_id' => auth()->id(),
+            'status' => 'pending',
+        ]);
+
+        // Attach items to the order and decrease stock
+        foreach ($orderItems as $item) {
+            $order->items()->create($item);
+            
+            // Decrease stock
+            $product = \App\Models\Product::find($item['products_id']);
+            $product->decrement('stock', $item['quantity']);
+        }
+
+        return response()->json([
+            'message' => 'Order placed successfully',
+            'order' => $order->load('items.product'),
+            'total_amount' => $totalAmount
+        ], 201);
     }
 
     /**
