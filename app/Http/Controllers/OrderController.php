@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Order;
+use App\Models\Product;
 
 class OrderController extends Controller
 {
@@ -33,12 +34,12 @@ class OrderController extends Controller
     {
         $validated = $request->validated();
 
-        // Calculate total amount and verify products
         $totalAmount = 0;
         $orderItems = [];
 
         foreach ($validated['products'] as $item) {
-            $product = \App\Models\Product::where('slug', $item['slug'])->first();
+
+            $product = Product::where('slug', $item['slug'])->first();
             
             if (!$product) {
                 return response()->json(['message' => 'Product ' . $item['slug'] . ' not found'], 404);
@@ -57,13 +58,11 @@ class OrderController extends Controller
             $totalAmount += $product->price * $item['quantity'];
         }
 
-        // Create the order
         $order = Order::create([
             'users_id' => auth()->id(),
             'status' => 'pending',
         ]);
 
-        // Attach items to the order and decrease stock
         foreach ($orderItems as $item) {
             $order->items()->create($item);
             
