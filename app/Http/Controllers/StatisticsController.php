@@ -15,6 +15,10 @@ class StatisticsController extends Controller
      */
     public function index()
     {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized. Only administrators can view statistics.'], 403);
+        }
+
         // Total sales (sum of unit_price * quantity from completed orders if we had completed status, let's just use all order items for now depending on order status)
         $totalSales = DB::table('order_items')
             ->join('orders', 'order_items.orders_id', '=', 'orders.id')
