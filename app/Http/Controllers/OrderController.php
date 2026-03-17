@@ -13,8 +13,16 @@ class OrderController extends Controller
      */
     public function index()
     {
-        // Customer should only see their own orders
-        $orders = auth()->user()->orders ?? Order::where('users_id', auth()->id())->get();
+        $user = auth()->user();
+
+        // Admins and employees can see all orders
+        if (in_array($user->role, ['admin', 'employee'])) {
+            $orders = Order::all();
+        } else {
+            // Customers see only their own orders
+            $orders = $user->orders ?? Order::where('users_id', $user->id)->get();
+        }
+
         return response()->json($orders);
     }
 
@@ -76,11 +84,14 @@ class OrderController extends Controller
      */
     public function show(Order $order)
     {
-        // Customer should only see their own order
-        if ($order->users_id !== auth()->id()) {
+        $user = auth()->user();
+
+        // Ensure only the order owner or staff can view it
+        if ($order->users_id !== $user->id && !in_array($user->role, ['admin', 'employee'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
-        return response()->json($order);
+
+        return response()->json($order->load('items.product'));
     }
 
     /**
@@ -104,8 +115,11 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-        if ($order->users_id !== auth()->user()->id) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+        $user = auth()->user();
+
+        // Only the customer who placed the order can cancel it
+        if ($order->users_id !== $user->id) {
+            return response()->json(['message' => 'Unauthorized. Only the order owner can cancel their order.'], 403);
         }
 
         if ($order->status !== 'pending') {
