@@ -6,6 +6,7 @@ use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Order;
 use App\Models\Product;
+use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
@@ -16,11 +17,10 @@ class OrderController extends Controller
     {
         $user = auth()->user();
 
-        // Admins and employees can see all orders
         if (in_array($user->role, ['admin', 'employee'])) {
             $orders = Order::all();
         } else {
-            // Customers see only their own orders
+      
             $orders = $user->orders ?? Order::where('users_id', $user->id)->get();
         }
 
@@ -59,14 +59,13 @@ class OrderController extends Controller
         }
 
         $order = Order::create([
-            'users_id' => auth()->id(),
+            'users_id' => auth()->user()->id,
             'status' => 'pending',
         ]);
 
         foreach ($orderItems as $item) {
             $order->items()->create($item);
             
-            // Decrease stock
             $product = \App\Models\Product::find($item['products_id']);
             $product->decrement('stock', $item['quantity']);
         }
@@ -85,25 +84,25 @@ class OrderController extends Controller
     {
         $user = auth()->user();
 
-        // Ensure only the order owner or staff can view it
         if ($order->users_id !== $user->id && !in_array($user->role, ['admin', 'employee'])) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        return response()->json($order->load('items.product'));
+        return response()->json($order);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateOrderRequest $request, Order $order)
+    public function update(Request $request, Order $order)
     {
-
+        
         $request->validate([
             'status' => 'required|in:pending,prepared,delivered,cancelled'
         ]);
 
         if (!in_array(auth()->user()->role, ['admin', 'employee'])) {
+            
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -116,7 +115,6 @@ class OrderController extends Controller
     {
         $user = auth()->user();
 
-        // Only the customer who placed the order can cancel it
         if ($order->users_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized. Only the order owner can cancel their order.'], 403);
         }
