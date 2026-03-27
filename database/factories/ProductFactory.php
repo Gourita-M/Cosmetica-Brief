@@ -18,7 +18,12 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => fake()->words(3, true),
+            'description' => fake()->paragraph(),
+            'price' => fake()->randomFloat(2, 5, 100),
+            'stock' => fake()->numberBetween(10, 100),
+            'image' => fake()->imageUrl(),
+            'category_id' => \App\Models\Category::factory(),
         ];
     }
 }

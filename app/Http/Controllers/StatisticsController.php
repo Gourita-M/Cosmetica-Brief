@@ -7,9 +7,17 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\DAO\StatisticsDAO;
 
 class StatisticsController extends Controller
 {
+    protected $statisticsDAO;
+
+    public function __construct(StatisticsDAO $statisticsDAO)
+    {
+        $this->statisticsDAO = $statisticsDAO;
+    }
+
     /**
      * Get overall statistics about sales, popular products, and categories.
      */
@@ -19,28 +27,9 @@ class StatisticsController extends Controller
             return response()->json(['message' => 'Unauthorized. Only administrators can view statistics.'], 403);
         }
         
-        $totalSales = DB::table('orders_items')
-            ->join('orders', 'orders_items.orders_id', '=', 'orders.id')
-            ->select(DB::raw('SUM(orders_items.quantity * orders_items.unit_price) as total_sales'))
-            ->whereIn('orders.status', ['delivered', 'prepared', 'pending'])
-            ->first()
-            ->total_sales ?? 0;
-
-        $popularProducts = DB::table('orders_items')
-            ->join('products', 'orders_items.products_id', '=', 'products.id')
-            ->select('products.name', DB::raw('SUM(orders_items.quantity) as total_quantity'))
-            ->groupBy('products.id', 'products.name')
-            ->orderByDesc('total_quantity')
-            ->limit(5)
-            ->get();
-
-        $categoryDistribution = DB::table('orders_items')
-            ->join('products', 'orders_items.products_id', '=', 'products.id')
-            ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->select('categories.name as category_name', DB::raw('SUM(orders_items.quantity) as total_sold'))
-            ->groupBy('categories.id', 'categories.name')
-            ->orderByDesc('total_sold')
-            ->get();
+        $totalSales = $this->statisticsDAO->getTotalSales();
+        $popularProducts = $this->statisticsDAO->getPopularProducts();
+        $categoryDistribution = $this->statisticsDAO->getCategoryDistribution();
 
         return response()->json([
             'total_sales' => $totalSales,

@@ -6,10 +6,18 @@ use App\Http\Requests\StoreOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Models\Order;
 use App\Models\Product;
+use App\DAO\OrderDAO;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
+    protected $orderDAO;
+
+    public function __construct(OrderDAO $orderDAO)
+    {
+        $this->orderDAO = $orderDAO;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -18,10 +26,9 @@ class OrderController extends Controller
         $user = auth()->user();
 
         if (in_array($user->role, ['admin', 'employee'])) {
-            $orders = Order::all();
+            $orders = $this->orderDAO->getAllOrders();
         } else {
-      
-            $orders = $user->orders ?? Order::where('users_id', $user->id)->get();
+            $orders = $user->orders ?? $this->orderDAO->getUserOrders($user->id);
         }
 
         return response()->json($orders);
@@ -39,7 +46,7 @@ class OrderController extends Controller
 
         foreach ($validated['products'] as $item) {
 
-            $product = Product::where('slug', $item['slug'])->first();
+            $product = $this->orderDAO->getProductBySlug($item['slug']);
             
             if (!$product) {
                 return response()->json(['message' => 'Product ' . $item['slug'] . ' not found'], 404);
@@ -58,16 +65,10 @@ class OrderController extends Controller
             $totalAmount += $product->price * $item['quantity'];
         }
 
-        $order = Order::create([
-            'users_id' => auth()->user()->id,
-            'status' => 'pending',
-        ]);
+        $order = $this->orderDAO->createPendingOrder(auth()->user()->id);
 
         foreach ($orderItems as $item) {
-            $order->items()->create($item);
-            
-            $product = \App\Models\Product::find($item['products_id']);
-            $product->decrement('stock', $item['quantity']);
+            $this->orderDAO->createOrderItemAndDecrementStock($order, $item);
         }
 
         return response()->json([
@@ -96,17 +97,15 @@ class OrderController extends Controller
      */
     public function update(Request $request, Order $order)
     {
-        
         $request->validate([
             'status' => 'required|in:pending,prepared,delivered,cancelled'
         ]);
 
         if (!in_array(auth()->user()->role, ['admin', 'employee'])) {
-            
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $order->update(['status' => $request->status]);
+        $this->orderDAO->updateOrderStatus($order, $request->status);
 
         return response()->json($order);
     }
@@ -123,7 +122,7 @@ class OrderController extends Controller
             return response()->json(['message' => 'Order cannot be canceled because it is already being prepared or delivered.'], 400);
         }
 
-        $order->update(['status' => 'cancelled']);
+        $this->orderDAO->updateOrderStatus($order, 'cancelled');
 
         return response()->json(['message' => 'Order successfully canceled', 'order' => $order]);
     }

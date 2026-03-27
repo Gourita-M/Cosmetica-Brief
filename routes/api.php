@@ -10,7 +10,7 @@ use App\Http\Controllers\StatisticsController;
 
 Route::get('/profile', function(Request $request) {
         return auth()->user();
-    })->middleware('auth::api');
+    })->middleware('auth:api');
 
 Route::get('/orders', [OrderController::class, 'index'])->middleware('auth:api');
 Route::post('/orders', [OrderController::class, 'store'])->middleware('auth:api');
