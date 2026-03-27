@@ -18,27 +18,26 @@ class StatisticsController extends Controller
         if (auth()->user()->role !== 'admin') {
             return response()->json(['message' => 'Unauthorized. Only administrators can view statistics.'], 403);
         }
-
-        // Total sales (sum of unit_price * quantity from completed orders if we had completed status, let's just use all order items for now depending on order status)
-        $totalSales = DB::table('order_items')
-            ->join('orders', 'order_items.orders_id', '=', 'orders.id')
-            ->select(DB::raw('SUM(order_items.quantity * order_items.unit_price) as total_sales'))
+        
+        $totalSales = DB::table('orders_items')
+            ->join('orders', 'orders_items.orders_id', '=', 'orders.id')
+            ->select(DB::raw('SUM(orders_items.quantity * orders_items.unit_price) as total_sales'))
             ->whereIn('orders.status', ['delivered', 'prepared', 'pending'])
             ->first()
             ->total_sales ?? 0;
 
-        $popularProducts = DB::table('order_items')
-            ->join('products', 'order_items.products_id', '=', 'products.id')
-            ->select('products.name', DB::raw('SUM(order_items.quantity) as total_quantity'))
+        $popularProducts = DB::table('orders_items')
+            ->join('products', 'orders_items.products_id', '=', 'products.id')
+            ->select('products.name', DB::raw('SUM(orders_items.quantity) as total_quantity'))
             ->groupBy('products.id', 'products.name')
             ->orderByDesc('total_quantity')
             ->limit(5)
             ->get();
 
-        $categoryDistribution = DB::table('order_items')
-            ->join('products', 'order_items.products_id', '=', 'products.id')
+        $categoryDistribution = DB::table('orders_items')
+            ->join('products', 'orders_items.products_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->select('categories.name as category_name', DB::raw('SUM(order_items.quantity) as total_sold'))
+            ->select('categories.name as category_name', DB::raw('SUM(orders_items.quantity) as total_sold'))
             ->groupBy('categories.id', 'categories.name')
             ->orderByDesc('total_sold')
             ->get();
